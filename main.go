@@ -4,9 +4,11 @@
 
 package main
 
+import "os"
 import "fmt"
 import "time"
 import "strings"
+import "strconv"
 
 type Driver interface {
   Start(name, url string) string
@@ -33,6 +35,13 @@ type ServiceMap struct {
   URLs  []string
 }
 
+type Settings struct {
+  TryRefreshAmount      int
+  TryFindServiceAmount  int
+  TryFindServiceDelay   time.Duration
+}
+
+var ServiceSettings Settings
 var ServiceMaps map[string]ServiceMap
 var ServiceUpdater Updater
 
@@ -57,7 +66,16 @@ func main() {
 }
 
 func IterateServiceRoute(serviceBaseName string) string {
-  return getNextURLForService(serviceBaseName)
+  attemptsNumber := ServiceSettings.TryFindServiceAmount
+  for attemptsNumber > 0 {
+    url := getNextURLForService(serviceBaseName)
+    if url != "" {
+      return url
+    }
+    attemptsNumber--
+    time.Sleep(ServiceSettings.TryFindServiceDelay)
+  }
+  return ""
 }
 
 func Finish(currentName string) {
@@ -71,6 +89,23 @@ func Delete(currentName string) {
 }
 
 func Start(name, url string, driver Driver) string {
+  // start settings
+  ServiceSettings.TryRefreshAmount = 3
+  ServiceSettings.TryFindServiceAmount = 5
+  ServiceSettings.TryFindServiceDelay = 3 * time.Second
+  if os.Getenv("TryRefreshAmount") != "" {
+    param,_ := strconv.Atoi(os.Getenv("TryRefreshAmount"))
+    ServiceSettings.TryRefreshAmount = param
+  }
+  if os.Getenv("TryFindServiceAmount") != "" {
+    param,_ := strconv.Atoi(os.Getenv("TryFindServiceAmount"))
+    ServiceSettings.TryRefreshAmount = param
+  }
+  if os.Getenv("TryFindServiceDelay") != "" {
+    param,_ := strconv.Atoi(os.Getenv("TryFindServiceDelay"))
+    ServiceSettings.TryFindServiceDelay = time.Duration(param) * time.Second
+  }
+
   // start
   currentName := driver.Start(name, url)
   ServiceUpdater = Updater{
@@ -84,7 +119,7 @@ func Start(name, url string, driver Driver) string {
 }
 
 func Get() {
-  val := tryRefreshForNTimes(3)
+  val := tryRefreshForNTimes(ServiceSettings.TryRefreshAmount)
   for key,value := range val {
     // populate Updater
     serviceCacheEntry := ServiceCacheEntry{
@@ -123,7 +158,6 @@ func recalculateServiceMaps(updater Updater) {
   ServiceMaps = serviceMaps
 }
 
-
 func getServiceMap(baseName string, serviceMaps map[string]ServiceMap) ServiceMap {
   for key,serviceMap := range serviceMaps {
     if key == baseName {
@@ -141,10 +175,6 @@ func getServiceBaseName(name string) string {
     return name[0:index]
   }
   return name
-}
-
-func getNextServiceURL(name string) string {
-  return ""
 }
 
 func tryRefreshForNTimes(n int) map[string]string {
