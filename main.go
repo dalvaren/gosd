@@ -1,19 +1,16 @@
 // To run:
 // go get github.com/githubnemo/CompileDaemon
-// CompileDaemon -command="./gervice"
+// CompileDaemon -command="./gosd"
 
 package main
 
-import "os"
 import "fmt"
 import "time"
 import "strings"
-import "strconv"
-import redis "gopkg.in/redis.v3"
 
 type Driver interface {
   Start(name, url string) string
-  Get()
+  Get() (map[string]string, error)
   Delete(currentName string)
 }
 
@@ -36,15 +33,15 @@ type ServiceMap struct {
   URLs  []string
 }
 
-var RedisClient *redis.Client
 var ServiceMaps map[string]ServiceMap
 var ServiceUpdater Updater
 
 func main() {
   fmt.Println("Starting GOSD client")
 
+  driver := DriverRedis{}
   // start
-  currentName := Start("service-2", "http://localhost:8881")
+  currentName := Start("service-2", "http://localhost:8881", driver)
   // fmt.Println(currentName)
 
   // get
@@ -69,28 +66,18 @@ func Finish(currentName string) {
 }
 
 func Delete(currentName string) {
-  RedisClient.HDel("gosd", currentName)
+  ServiceUpdater.Driver.Delete(currentName)
+  // RedisClient.HDel("gosd", currentName)
 }
 
-func Start(name, url string) string {
+func Start(name, url string, driver Driver) string {
   // start
-  redisDB,_ := strconv.Atoi(os.Getenv("RedisDB"))
-  RedisClient = redis.NewClient(&redis.Options{
-        Addr:     os.Getenv("RedisAddr"),
-        Password: os.Getenv("RedisPassword"), // no password set
-        DB:       int64(redisDB),  // use default DB
-    })
-  _, err := RedisClient.Ping().Result()
-  if err != nil {
-    panic(err.Error())
-  }
-
-  // set
-  currentName := registerService(name, url)
+  currentName := driver.Start(name, url)
   ServiceUpdater = Updater{
     Name: currentName,
     State: "expired",
     TTL:    time.Now(),
+    Driver: driver,
   }
 
   return currentName
@@ -160,19 +147,9 @@ func getNextServiceURL(name string) string {
   return ""
 }
 
-func registerService(basicName, url string) string {
-  finalServiceName := ""
-  created := false
-  for created != true {
-    finalServiceName = basicName + "-" + time.Now().Format("20060102150405.99999999")
-    created,_ = RedisClient.HSetNX("gosd", finalServiceName, url).Result()
-  }
-  return finalServiceName
-}
-
 func tryRefreshForNTimes(n int) map[string]string {
   for n > 0 {
-    val, err := RedisClient.HGetAllMap("gosd").Result()
+    val, err := ServiceUpdater.Driver.Get()
     if err != nil {
       n--
     } else {

@@ -3,6 +3,7 @@
 *.a
 *.so
 .source
+gosd
 
 # Folders
 _obj
