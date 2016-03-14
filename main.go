@@ -49,9 +49,8 @@ func main() {
   }
 
   // set
-  if err = RedisClient.HSet("gosd", name, url).Err(); err != nil {
-    panic(err.Error())
-  }
+  currentName := registerService(name, url)
+  fmt.Println(currentName)
 
   // get
   val := tryRefreshForNTimes(3)
@@ -59,6 +58,20 @@ func main() {
     fmt.Println(key,value)
   }
 
+}
+
+func getNextServiceURL(name string) string {
+  return ""
+}
+
+func registerService(basicName, url string) string {
+  finalServiceName := ""
+  created := false
+  for created != true {
+    finalServiceName := basicName + "-" + time.Now().Format("20060102150405.99999999")
+    created,_ = RedisClient.HSetNX("gosd", finalServiceName, url).Result()
+  }
+  return finalServiceName
 }
 
 func tryRefreshForNTimes(n int) map[string]string {
