@@ -68,7 +68,7 @@ func registerService(basicName, url string) string {
   finalServiceName := ""
   created := false
   for created != true {
-    finalServiceName := basicName + "-" + time.Now().Format("20060102150405.99999999")
+    finalServiceName = basicName + "-" + time.Now().Format("20060102150405.99999999")
     created,_ = RedisClient.HSetNX("gosd", finalServiceName, url).Result()
   }
   return finalServiceName
