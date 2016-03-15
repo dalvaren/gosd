@@ -9,6 +9,8 @@ import "fmt"
 import "time"
 import "strings"
 import "strconv"
+import "syscall"
+import "os/signal"
 
 type Driver interface {
   Start(name, url string) string
@@ -44,13 +46,14 @@ type Settings struct {
 var ServiceSettings Settings
 var ServiceMaps map[string]ServiceMap
 var ServiceUpdater Updater
+var LastCronTime time.Time
 
 func main() {
   fmt.Println("Starting GOSD client")
 
   driver := DriverRedis{}
   // start
-  currentName := Start("service-2", "http://localhost:8881", driver)
+  currentName := Start("service-2", "http://localhost:8885", driver)
   // fmt.Println(currentName)
 
   // get
@@ -59,10 +62,54 @@ func main() {
   // finish
   Finish(currentName)
 
+  // add services manually
+  AddServiceManually("service-2", "http://localhost:8886")
+  AddServiceManually("service-2", "http://localhost:8887")
+
+  // remove service with URL
+  DeleteServiceWithURL("http://localhost:8881")
+  // DeleteServiceWithURL("http://localhost:8884")
+
   // IterateServiceRoute
   fmt.Println(IterateServiceRoute("service-2"))
   fmt.Println(IterateServiceRoute("service-2"))
   fmt.Println(IterateServiceRoute("service-2"))
+  fmt.Println(IterateServiceRoute("service-2"))
+  fmt.Println(IterateServiceRoute("service-2"))
+
+  // waiting closing.
+  WaitClosing()
+  // for {
+  //       fmt.Println("sleeping...")
+  //       time.Sleep(10 * time.Second) // or runtime.Gosched() or similar per @misterbee
+  //   }
+}
+
+func AddServiceManually(name, url string) {
+  serviceCacheEntry := ServiceCacheEntry{
+    Name: name + "-" + time.Now().Format("20060102150405.99999999"),
+    URL: url,
+  }
+  ServiceUpdater.ServiceCacheEntries = append(ServiceUpdater.ServiceCacheEntries, serviceCacheEntry)
+  recalculateServiceMaps(ServiceUpdater)
+}
+
+func UpdateByCron() {
+  if LastCronTime.Add(120 * time.Minute).Before(time.Now()) {
+    Get()
+  }
+}
+
+func WaitClosing() {
+  c := make(chan os.Signal, 1)
+  signal.Notify(c, os.Interrupt)
+  signal.Notify(c, syscall.SIGTERM)
+  go func() {
+      <-c
+      fmt.Println("Finishing service: " + ServiceUpdater.Name)
+      Finish(ServiceUpdater.Name)
+      os.Exit(1)
+  }()
 }
 
 func IterateServiceRoute(serviceBaseName string) string {
@@ -85,7 +132,15 @@ func Finish(currentName string) {
 
 func Delete(currentName string) {
   ServiceUpdater.Driver.Delete(currentName)
-  // RedisClient.HDel("gosd", currentName)
+  Get()
+}
+
+func DeleteServiceWithURL(url string) {
+  for _,serviceCacheEntry := range ServiceUpdater.ServiceCacheEntries {
+    if serviceCacheEntry.URL == url {
+      Delete(serviceCacheEntry.Name)
+    }
+  }
 }
 
 func Start(name, url string, driver Driver) string {
@@ -106,6 +161,9 @@ func Start(name, url string, driver Driver) string {
     ServiceSettings.TryFindServiceDelay = time.Duration(param) * time.Second
   }
 
+  // start cron
+  LastCronTime = time.Now()
+
   // start
   currentName := driver.Start(name, url)
   ServiceUpdater = Updater{
@@ -120,6 +178,7 @@ func Start(name, url string, driver Driver) string {
 
 func Get() {
   val := tryRefreshForNTimes(ServiceSettings.TryRefreshAmount)
+  ServiceUpdater.ServiceCacheEntries = []ServiceCacheEntry{}
   for key,value := range val {
     // populate Updater
     serviceCacheEntry := ServiceCacheEntry{
@@ -154,7 +213,6 @@ func recalculateServiceMaps(updater Updater) {
     serviceMap.URLs = append(serviceMap.URLs, serviceCacheEntry.URL)
     serviceMaps[getServiceBaseName(serviceCacheEntry.Name)] = serviceMap
   }
-
   ServiceMaps = serviceMaps
 }
 

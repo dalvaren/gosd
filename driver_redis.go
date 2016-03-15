@@ -5,6 +5,7 @@
 package main
 
 import "os"
+import "fmt"
 import "time"
 import "strconv"
 import redis "gopkg.in/redis.v3"
@@ -23,17 +24,13 @@ func (this DriverRedis) Start(name, url string) string {
     })
   _, err := RedisClient.Ping().Result()
   if err != nil {
-    panic(err.Error())
+    fmt.Println("Error connecting with Redis.")
+    fmt.Println(err.Error())
+    return "standalone-" + name
   }
 
   // set
   currentName := registerService(name, url)
-  ServiceUpdater = Updater{
-    Name: currentName,
-    State: "expired",
-    TTL:    time.Now(),
-  }
-
   return currentName
 }
 
