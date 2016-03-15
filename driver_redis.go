@@ -2,7 +2,7 @@
 // go get github.com/githubnemo/CompileDaemon
 // CompileDaemon -command="./gervice"
 
-package main
+package gosd
 
 import "os"
 import "fmt"
@@ -16,10 +16,10 @@ var RedisClient *redis.Client
 
 func (this DriverRedis) Start(name, url string) string {
   // start
-  redisDB,_ := strconv.Atoi(os.Getenv("RedisDB"))
+  redisDB,_ := strconv.Atoi(os.Getenv("gosdRedisDB"))
   RedisClient = redis.NewClient(&redis.Options{
-        Addr:     os.Getenv("RedisAddr"),
-        Password: os.Getenv("RedisPassword"), // no password set
+        Addr:     os.Getenv("gosdRedisAddr"),
+        Password: os.Getenv("gosdRedisPassword"), // no password set
         DB:       int64(redisDB),  // use default DB
     })
   _, err := RedisClient.Ping().Result()

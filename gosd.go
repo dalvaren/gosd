@@ -2,7 +2,7 @@
 // go get github.com/githubnemo/CompileDaemon
 // CompileDaemon -command="./gosd"
 
-package main
+package gosd
 
 import "os"
 import "fmt"
@@ -47,40 +47,6 @@ var ServiceSettings Settings
 var ServiceMaps map[string]ServiceMap
 var ServiceUpdater Updater
 var LastCronTime time.Time
-
-func main() {
-  fmt.Println("Starting GOSD client")
-
-  // start
-  currentName := Start("service-2", "http://localhost:8885", DriverRedis{})
-  // fmt.Println(currentName)
-
-  // get
-  Get()
-
-  // finish
-  Finish(currentName)
-
-  // add services manually
-  AddServiceManually("service-2", "http://localhost:8886")
-  AddServiceManually("service-2", "http://localhost:8887")
-
-  // remove service with URL
-  DeleteServiceWithURL("http://localhost:8881")
-  // DeleteServiceWithURL("http://localhost:8884")
-
-  // IterateServiceRoute
-  fmt.Println(IterateServiceRoute("service-2"))
-  fmt.Println(IterateServiceRoute("service-2"))
-  fmt.Println(IterateServiceRoute("service-2"))
-  fmt.Println(IterateServiceRoute("service-2"))
-  fmt.Println(IterateServiceRoute("service-2"))
-
-  // for {
-  //       fmt.Println("sleeping...")
-  //       time.Sleep(10 * time.Second) // or runtime.Gosched() or similar per @misterbee
-  //   }
-}
 
 func AddServiceManually(name, url string) {
   serviceCacheEntry := ServiceCacheEntry{
@@ -145,16 +111,16 @@ func Start(name, url string, driver Driver) string {
   ServiceSettings.TryRefreshAmount = 3
   ServiceSettings.TryFindServiceAmount = 5
   ServiceSettings.TryFindServiceDelay = 3 * time.Second
-  if os.Getenv("TryRefreshAmount") != "" {
-    param,_ := strconv.Atoi(os.Getenv("TryRefreshAmount"))
+  if os.Getenv("gosdTryRefreshAmount") != "" {
+    param,_ := strconv.Atoi(os.Getenv("gosdTryRefreshAmount"))
     ServiceSettings.TryRefreshAmount = param
   }
-  if os.Getenv("TryFindServiceAmount") != "" {
-    param,_ := strconv.Atoi(os.Getenv("TryFindServiceAmount"))
+  if os.Getenv("gosdTryFindServiceAmount") != "" {
+    param,_ := strconv.Atoi(os.Getenv("gosdTryFindServiceAmount"))
     ServiceSettings.TryRefreshAmount = param
   }
-  if os.Getenv("TryFindServiceDelay") != "" {
-    param,_ := strconv.Atoi(os.Getenv("TryFindServiceDelay"))
+  if os.Getenv("gosdTryFindServiceDelay") != "" {
+    param,_ := strconv.Atoi(os.Getenv("gosdTryFindServiceDelay"))
     ServiceSettings.TryFindServiceDelay = time.Duration(param) * time.Second
   }
 

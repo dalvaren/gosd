@@ -16,6 +16,20 @@ $ go get github.com/dalvaren/gosd
 
 ## Configuration
 
+Following the [12 factor app rules](http://12factor.net/), the configurations for this library shall be done using environment variables. Below are the list with the needed configuration
+
+```
+# For the Redis Driver
+export gosdRedisDB=0                  # Redis database
+export gosdRedisAddr="localhost:6379" # Redis host address
+export gosdRedisPassword=""           # Redis password
+
+# For the Library
+export gosdTryRefreshAmount=3         # Number of times the library tries to reach the Service Discovery database for updating.
+export gosdTryFindServiceAmount=5     # Number of times the service tries to find the service URL in its cache. It's important to wait for other services to start.
+export gosdTryFindServiceDelay=3      # Delay in seconds between attempts of gosdTryFindServiceAmount
+```
+
 ## Usage
 
 First, you need to import it.
@@ -73,6 +87,24 @@ You can see other (and important) features in next section.
 
 
 ## Example
+
+As example let's run 2 identical services called "provider", where they responds with their unique IDs. I'm using Gin as framework.
+
+```
+# provider.go
+
+
+```
+
+  - Open a terninal and run that with `go run provider.go :3333 1`
+  - Open another terninal and run that with `go run provider.go :3334 2`
+
+And the "consumer", who makes requests for the 2 services. Note that it does not need to know them individually.
+
+```
+# consumer.go
+
+```
 
 ## Contribute creating drivers for it!
 
