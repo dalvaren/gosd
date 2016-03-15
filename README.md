@@ -10,7 +10,7 @@ Today the only driver implemented works for Redis, but other are planned (etcd, 
 
 Just add the library to your project.
 
-```
+```go
 $ go get github.com/dalvaren/gosd
 ```
 
@@ -18,7 +18,7 @@ $ go get github.com/dalvaren/gosd
 
 Following the [12 factor app rules](http://12factor.net/), the configurations for this library shall be done using environment variables. Below are the list with the needed configuration
 
-```
+```go
 # For the Redis Driver
 export gosdRedisDB=0                  # Redis database
 export gosdRedisAddr="localhost:6379" # Redis host address
@@ -34,13 +34,13 @@ export gosdTryFindServiceDelay=3      # Delay in seconds between attempts of gos
 
 First, you need to import it.
 
-```
+```go
 import gosd "github.com/dalvaren/gosd"
 ```
 
 Start the Service Discovery client and choose the desired driver. Do it at your application startup. Basically, this command makes the microservice register itself in service discovery when it starts.
 
-```
+```go
 currentName := gosd.Start("my-service-name", "http://localhost:8885", gosd.DriverRedis{})
 ```
 
@@ -48,13 +48,13 @@ currentName := gosd.Start("my-service-name", "http://localhost:8885", gosd.Drive
 
 Now every time you want to get the most updated version of the registered services list you run:
 
-```
+```go
 gosd.Get()
 ```
 
 And for the last, when you need some specific microservice URL (for an API request for example) you just call:
 
-```
+```go
 gosd.IterateServiceRoute("my-other-service-name")
 ```
 
@@ -69,19 +69,19 @@ You can see other (and important) features in next section.
 
 1. Update using GOSD cron. You can call this command on all microservice endpoints, put it in a middleware or something similar.
 
-  ```
+  ```go
   gosd.UpdateByCron()
   ```
 
 1. Delete some service manually, by its URL. It shall be done after you make some request and the service returns no response (you can perform 3 to 5 attempts before removing some server). Take care with this command, since you can unregister the own service:
 
-  ```
+  ```go
   gosd.DeleteServiceWithURL("http://localhost:8881")
   ```
 
 1. Sometimes it's interesting to register some services locally, for that you can use the command below. But remember to register again after each `gosd.Get()` or `gosd.UpdateByCron()` :
 
-  ```
+  ```go
   gosd.AddServiceManually("service-name", "http://localhost:8886")
   ```
 
@@ -90,7 +90,7 @@ You can see other (and important) features in next section.
 
 As example let's run 2 identical services called "provider", where they responds with their unique IDs. I'm using Gin as framework.
 
-```
+```go
 // provider.go
 package main
 
@@ -117,7 +117,7 @@ func main() {
 
 And the "consumer", who makes 10 requests for the 2 services. Note that it does not need to know them individually and you also can start them some seconds later.
 
-```
+```go
 // consumer.go
 package main
 
