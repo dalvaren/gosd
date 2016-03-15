@@ -51,9 +51,8 @@ var LastCronTime time.Time
 func main() {
   fmt.Println("Starting GOSD client")
 
-  driver := DriverRedis{}
   // start
-  currentName := Start("service-2", "http://localhost:8885", driver)
+  currentName := Start("service-2", "http://localhost:8885", DriverRedis{})
   // fmt.Println(currentName)
 
   // get
@@ -77,8 +76,6 @@ func main() {
   fmt.Println(IterateServiceRoute("service-2"))
   fmt.Println(IterateServiceRoute("service-2"))
 
-  // waiting closing.
-  WaitClosing()
   // for {
   //       fmt.Println("sleeping...")
   //       time.Sleep(10 * time.Second) // or runtime.Gosched() or similar per @misterbee
@@ -172,6 +169,9 @@ func Start(name, url string, driver Driver) string {
     TTL:    time.Now(),
     Driver: driver,
   }
+
+  // force service to unregister on closing
+  WaitClosing()
 
   return currentName
 }
