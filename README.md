@@ -139,6 +139,21 @@ func main() {
 
 ```
 
+- Open another terninal and run that with `go run consumer.go` ... it will print something like:
+
+  ```
+  "Provider: 1"
+  "Provider: 2"
+  "Provider: 1"
+  "Provider: 2"
+  "Provider: 1"
+  "Provider: 2"
+  "Provider: 1"
+  "Provider: 2"
+  "Provider: 1"
+  "Provider: 2"
+  ```
+
 ## Contribute creating drivers for it!
 
 Right now, I've only implemented a driver for Redis.
