@@ -99,7 +99,7 @@ import "github.com/gin-gonic/gin"
 import "github.com/dalvaren/gosd"
 
 func main() {
-  gosd.Start("my-service-name", "http://localhost" + os.Args[1], gosd.DriverRedis{})
+  gosd.Start("provider", "http://localhost" + os.Args[1], gosd.DriverRedis{})
   gosd.Get()
 
   router := gin.Default()
@@ -115,10 +115,27 @@ func main() {
   - Open a terninal and run that with `go run provider.go :3333 1`
   - Open another terninal and run that with `go run provider.go :3334 2`
 
-And the "consumer", who makes requests for the 2 services. Note that it does not need to know them individually.
+And the "consumer", who makes 10 requests for the 2 services. Note that it does not need to know them individually and you also can start them some seconds later.
 
 ```
-# consumer.go
+// consumer.go
+package main
+
+import "fmt"
+import "github.com/dalvaren/gosd"
+import "github.com/parnurzeal/gorequest"
+
+func main() {
+  gosd.Start("consumer", "http://localhost:fake", gosd.DriverRedis{})
+  gosd.Get()
+
+  for n:=0; n < 10; n++ {
+    providerURL := gosd.IterateServiceRoute("provider")
+    request := gorequest.New()
+    _, body, _ := request.Get(providerURL + "/ping").End()
+    fmt.Print(body)
+  }
+}
 
 ```
 
