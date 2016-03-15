@@ -82,6 +82,7 @@ func IterateServiceRoute(serviceBaseName string) string {
     if url != "" {
       return url
     }
+    Get()
     attemptsNumber--
     time.Sleep(ServiceSettings.TryFindServiceDelay)
   }

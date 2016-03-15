@@ -91,8 +91,24 @@ You can see other (and important) features in next section.
 As example let's run 2 identical services called "provider", where they responds with their unique IDs. I'm using Gin as framework.
 
 ```
-# provider.go
+// provider.go
+package main
 
+import "os"
+import "github.com/gin-gonic/gin"
+import "github.com/dalvaren/gosd"
+
+func main() {
+  gosd.Start("my-service-name", "http://localhost" + os.Args[1], gosd.DriverRedis{})
+  gosd.Get()
+
+  router := gin.Default()
+  router.GET("/ping", func(ginContext *gin.Context) {
+    gosd.UpdateByCron()
+    ginContext.JSON(200, "Provider: " + os.Args[2])
+  })
+  router.Run(os.Args[1])
+}
 
 ```
 
